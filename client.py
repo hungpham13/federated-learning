@@ -1,11 +1,11 @@
 import flwr as fl
-from model import Net
+from model import BaseNet
 from config import DEVICE
 from torch.utils.data import DataLoader
 
 
 class FlowerClient(fl.client.NumPyClient):
-    def __init__(self, cid, net: Net, trainloader, valloader):
+    def __init__(self, cid, net: BaseNet, trainloader, valloader):
         self.cid = cid
         self.net = net
         self.trainloader = trainloader
@@ -28,8 +28,7 @@ class FlowerClient(fl.client.NumPyClient):
         return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
 
 
-def client_fn(cid, trainloaders: list[DataLoader], valloaders: list[DataLoader]) -> FlowerClient:
-    net = Net().to(DEVICE)
+def client_fn(cid, net, trainloaders: list[DataLoader], valloaders: list[DataLoader]) -> FlowerClient:
     trainloader = trainloaders[int(cid)]
     valloader = valloaders[int(cid)]
     return FlowerClient(cid, net, trainloader, valloader)

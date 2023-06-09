@@ -1,6 +1,7 @@
 from typing import List
 
 import torch
+from torch import tensor
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
@@ -14,7 +15,7 @@ class BaseNet(nn.Module):
 
     def set_parameters(self, parameters: List[np.ndarray]):
         params_dict = zip(self.state_dict().keys(), parameters)
-        state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params_dict})
+        state_dict = OrderedDict({k: tensor(v) for k, v in params_dict})
         self.load_state_dict(state_dict, strict=True)
 
     def train_epoch(self, trainloader, epochs: int):
@@ -67,7 +68,7 @@ class Net(BaseNet):
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, 10)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> tensor:
         x = self.pool(F.relu(self.conv1(x)))
         x = self.pool(F.relu(self.conv2(x)))
         x = x.view(-1, 16 * 5 * 5)
@@ -77,7 +78,7 @@ class Net(BaseNet):
         return x
 
 
-class VGG16(nn.Module):
+class VGG16(BaseNet):
     cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']
 
     def __init__(self):
