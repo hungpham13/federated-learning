@@ -1,4 +1,4 @@
 import torch
 
-DEVICE = torch.device("cpu")  # Try "cuda" to train on GPU
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else 'cpu')  # Try "cuda" to train on GPU
 NUM_CLIENTS = 10
