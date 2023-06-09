@@ -2,3 +2,4 @@ flwr[simulation]
 torch
 torchvision
 numpy
+tensorrt

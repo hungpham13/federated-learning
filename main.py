@@ -17,7 +17,7 @@ def simulate_cifar(strategy: Strategy, net):
     fl.simulation.start_simulation(
         client_fn=lambda cid: client_fn(cid, net, trainloaders, valloaders),
         num_clients=NUM_CLIENTS,
-        config=fl.server.ServerConfig(num_rounds=3),  # Just three rounds
+        config=fl.server.ServerConfig(num_rounds=10),  # Just three rounds
         strategy=strategy,
         client_resources=client_resources,
     )
