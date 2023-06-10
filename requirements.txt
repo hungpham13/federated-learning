@@ -2,6 +2,5 @@ flwr[simulation]
 torch
 torchvision
 numpy
-tensorrt
-nvidia-tensorrt
-nvidia-pyindex
+pandas
+tqdm

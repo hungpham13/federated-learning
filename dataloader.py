@@ -1,7 +1,57 @@
 import torchvision.transforms as transforms
 from torchvision.datasets import CIFAR10
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, Dataset, random_split
 import torch
+import pandas as pd
+import urllib.request
+import os
+from pathlib import Path
+from tqdm import tqdm
+
+
+def download_file(img_url: str, path: Path):
+    headers = {'User-Agent': 'XY'}
+    request = urllib.request.Request(img_url, headers=headers)
+
+    with urllib.request.urlopen(request) as web_file:
+        data = web_file.read()
+        with open(path, mode='wb') as local_file:
+            local_file.write(data)
+
+
+class Fitzpatrick17k(Dataset):
+    def __init__(self, csv_file, image_dir, transform=None):
+        df = pd.read_csv(csv_file)
+        df.dropna(subset=['url'], inplace=True)
+        self.table = df
+        self.transform = transform
+        self.image_dir = Path(image_dir)
+
+    def __getitem__(self, idx):
+        pass
+
+    def download(self):
+        folder_dir = self.image_dir
+
+        if folder_dir.exists():
+            print("Files already downloaded")
+
+
+        os.mkdir(folder_dir)
+        error_url = {}
+
+        for i in tqdm(self.table.index):
+            url = self.table.loc[i, 'url']
+            dst_path = folder_dir / self.table.loc[i, 'md5hash']
+            try:
+                download_file(url, dst_path)
+            except:
+                error_url[i] = url
+
+        error_url
+
+    def __len__(self):
+        return len(self.table)
 
 
 def load_cifars(num_clients: int):
@@ -29,3 +79,7 @@ def load_cifars(num_clients: int):
         valloaders.append(DataLoader(ds_val, batch_size=32))
     testloader = DataLoader(testset, batch_size=32)
     return trainloaders, valloaders, testloader
+
+
+def load_fitzpatrick():
+    pass
