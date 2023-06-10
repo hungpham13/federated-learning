@@ -54,7 +54,6 @@ def simulate_cifar(StrategyCls: Type[Strategy], strategyArgs, net, num_rounds=3)
 
     strategy = StrategyCls(
         evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
-        fit_metrics_aggregation_fn=weighted_average,
         initial_parameters=fl.common.ndarrays_to_parameters(net.get_parameters()),
         evaluate_fn=lambda x, y, z: evaluate(x, y, z, net, testloader),
         on_fit_config_fn=fit_config,
