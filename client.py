@@ -16,9 +16,14 @@ class FlowerClient(fl.client.NumPyClient):
         return self.net.get_parameters()
 
     def fit(self, parameters, config):
-        print(f"[Client {self.cid}] fit, config: {config}")
+        # Read values from config
+        server_round = config["server_round"]
+        local_epochs = config["local_epochs"]
+
+        # Use values provided by the config
+        print(f"[Client {self.cid}, round {server_round}] fit, config: {config}")
         self.net.set_parameters(parameters)
-        self.net.train_epoch(self.trainloader, epochs=1)
+        self.net.train_epoch(self.trainloader, epochs=local_epochs)
         return self.net.get_parameters(), len(self.trainloader), {}
 
     def evaluate(self, parameters, config):
