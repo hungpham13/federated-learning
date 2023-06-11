@@ -12,10 +12,14 @@ from torch.utils.data import DataLoader
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # Multiply accuracy of each client by number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
+    precisions = [num_examples * m["precision"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
 
     # Aggregate and return custom metric (weighted average)
-    return {"accuracy": sum(accuracies) / sum(examples)}
+    return {
+        "accuracy": sum(accuracies) / sum(examples),
+        "precision": sum(precisions) / sum(examples),
+    }
 
 
 def evaluate(
@@ -29,7 +33,7 @@ def evaluate(
     loss, accuracy, precision = net.test(testloader)
     print(
         f"Server-side evaluation loss {loss} / accuracy {accuracy} / precision {CLASSES[net.focus_label]} {precision}")
-    return loss, {"accuracy": accuracy}
+    return loss, {"accuracy": accuracy, "precision": precision}
 
 
 def fit_config(server_round: int):
