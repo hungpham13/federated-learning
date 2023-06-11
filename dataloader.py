@@ -28,7 +28,7 @@ CLASSES = ('benign', 'non-neoplastic', 'malignant')
 
 
 class Fitzpatrick17k(Dataset):
-    def __init__(self, csv_file, image_dir, train=True, transform=None, sort_by_skin_color=False):
+    def __init__(self, csv_file, image_dir, train=True, download=False, transform=None, sort_by_skin_color=False):
         df = pd.read_csv(csv_file)
         df.dropna(subset=['url'], inplace=True)
         df_train, df_test = train_test_split(
@@ -41,14 +41,16 @@ class Fitzpatrick17k(Dataset):
         else:
             self.table = df_test.reset_index(drop=True)
 
-        self.error_url = {}
+        if download:
+            self.error_url = {}
+            self.download()
+        else:
+            self.error_url = None
+            downloaded = os.listdir(image_dir)
+            self.table = self.table.loc[self.table['md5hash'].isin(
+                downloaded)].reset_index(drop=True)
         self.transform = transform
         self.image_dir = Path(image_dir)
-        if self.image_dir.exists() and len([name for name in os.listdir(self.image_dir)]) == len(self.table):
-            print("Files already downloaded")
-        else:
-            os.makedirs(self.image_dir, exist_ok=True)
-            self.download()
 
     def __getitem__(self, idx):
         img_path = self.image_dir / self.table.loc[idx, 'md5hash']
@@ -67,10 +69,13 @@ class Fitzpatrick17k(Dataset):
             self.error_url[i] = url
 
     def download(self):
-        with Pool(4) as p:
-            p.map(self.run_download, self.table.index)
-
-        print(self.error_url)
+        if self.image_dir.exists() and len([name for name in os.listdir(self.image_dir)]) == len(self.table):
+            print("Files already downloaded")
+        else:
+            os.makedirs(self.image_dir, exist_ok=True)
+            with Pool(4) as p:
+                p.map(self.run_download, self.table.index)
+            print(self.error_url)
 
     def __len__(self):
         return len(self.table)
