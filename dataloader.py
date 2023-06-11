@@ -18,7 +18,7 @@ def download_file(url, dst_path):
     if (Path(dst_path).exists()):
         return
 
-    with urllib.request.urlopen(request) as web_file:
+    with urllib.request.urlopen(request, timeout=120) as web_file:
         data = web_file.read()
         with open(dst_path, mode='wb') as local_file:
             local_file.write(data)
@@ -44,7 +44,7 @@ class Fitzpatrick17k(Dataset):
         self.error_url = {}
         self.transform = transform
         self.image_dir = Path(image_dir)
-        if self.image_dir.exists() and len([name for name in os.listdir(self.image_dir) if os.path.isfile(name)]) == len(self.table):
+        if self.image_dir.exists() and len([name for name in os.listdir(self.image_dir)]) == len(self.table):
             print("Files already downloaded")
         else:
             os.makedirs(self.image_dir, exist_ok=True)
