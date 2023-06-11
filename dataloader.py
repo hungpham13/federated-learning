@@ -41,11 +41,13 @@ class Fitzpatrick17k(Dataset):
         else:
             self.table = df_test.reset_index(drop=True)
 
+        self.error_url = {}
         self.transform = transform
         self.image_dir = Path(image_dir)
-        if len([name for name in os.listdir(self.image_dir) if os.path.isfile(name)]) == len(self.table):
+        if self.image_dir.exists() and len([name for name in os.listdir(self.image_dir) if os.path.isfile(name)]) == len(self.table):
             print("Files already downloaded")
         else:
+            os.makedirs(self.image_dir, exist_ok=True)
             self.download()
 
     def __getitem__(self, idx):
@@ -56,24 +58,19 @@ class Fitzpatrick17k(Dataset):
         label = CLASSES.index(self.table.loc[idx, 'three_partition_label'])
         return img, label
 
+    def run_download(self, i):
+        url = self.table.loc[i, 'url']
+        dst_path = self.image_dir / self.table.loc[i, 'md5hash']
+        try:
+            download_file(url, dst_path)
+        except:
+            self.error_url[i] = url
+
     def download(self):
-        folder_dir = self.image_dir
-
-        os.mkdir(folder_dir)
-        error_url = {}
-
-        def download(i):
-            url = self.table.loc[i, 'url']
-            dst_path = folder_dir / self.table.loc[i, 'md5hash']
-            try:
-                download_file(url, dst_path)
-            except:
-                error_url[i] = url
-
         with Pool(4) as p:
-            p.map(download, self.table.index)
+            p.map(self.run_download, self.table.index)
 
-        error_url
+        print(self.error_url)
 
     def __len__(self):
         return len(self.table)
