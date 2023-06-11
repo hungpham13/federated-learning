@@ -31,7 +31,7 @@ class FlowerClient(fl.client.NumPyClient):
         print(f"[Client {self.cid}] evaluate, config: {config}")
         self.net.set_parameters(parameters)
         loss, accuracy, precision = self.net.test(self.valloader)
-        return float(loss), len(self.valloader), {"accuracy": float(accuracy), "precision": float(precision)}
+        return float(loss), len(self.valloader), {"accuracy": float(accuracy), "precision": precision}
 
 
 def client_fn(cid, net, trainloaders: list[DataLoader], valloaders: list[DataLoader]) -> FlowerClient:
