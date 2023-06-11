@@ -44,8 +44,8 @@ def fit_config(server_round: int):
     return config
 
 
-def simulate_cifar(StrategyCls: Type[Strategy], strategyArgs, net, num_rounds=3):
-    trainloaders, valloaders, testloader = load_cifars(NUM_CLIENTS)
+def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds=3):
+    trainloaders, valloaders, testloader = loaders
 
     # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)
     client_resources = None
@@ -53,8 +53,10 @@ def simulate_cifar(StrategyCls: Type[Strategy], strategyArgs, net, num_rounds=3)
         client_resources = {"num_gpus": 1}
 
     strategy = StrategyCls(
-        evaluate_metrics_aggregation_fn=weighted_average,  # <-- pass the metric aggregation function
-        initial_parameters=fl.common.ndarrays_to_parameters(net.get_parameters()),
+        # <-- pass the metric aggregation function
+        evaluate_metrics_aggregation_fn=weighted_average,
+        initial_parameters=fl.common.ndarrays_to_parameters(
+            net.get_parameters()),
         evaluate_fn=lambda x, y, z: evaluate(x, y, z, net, testloader),
         on_fit_config_fn=fit_config,
         **strategyArgs,
