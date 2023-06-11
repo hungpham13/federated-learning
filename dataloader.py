@@ -9,6 +9,7 @@ from pathlib import Path
 from PIL import Image
 from sklearn.model_selection import train_test_split
 from multiprocessing import Pool
+from config import CLASSES
 
 
 def download_file(url, dst_path):
@@ -22,9 +23,6 @@ def download_file(url, dst_path):
         data = web_file.read()
         with open(dst_path, mode='wb') as local_file:
             local_file.write(data)
-
-
-CLASSES = ('benign', 'non-neoplastic', 'malignant')
 
 
 class Fitzpatrick17k(Dataset):

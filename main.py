@@ -1,6 +1,6 @@
 from dataloader import load_cifars
 import flwr as fl
-from config import DEVICE, NUM_CLIENTS
+from config import DEVICE, NUM_CLIENTS, CLASSES
 from client import client_fn
 from flwr.server.strategy import Strategy
 from flwr.common import Metrics
@@ -26,8 +26,9 @@ def evaluate(
         testloader: DataLoader,
 ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
     net.set_parameters(parameters)  # Update model with the latest parameters
-    loss, accuracy = net.test(testloader)
-    print(f"Server-side evaluation loss {loss} / accuracy {accuracy}")
+    loss, accuracy, precision = net.test(testloader)
+    print(
+        f"Server-side evaluation loss {loss} / accuracy {accuracy} / precision {CLASSES[net.focus_label]} {precision}")
     return loss, {"accuracy": accuracy}
 
 

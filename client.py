@@ -21,7 +21,8 @@ class FlowerClient(fl.client.NumPyClient):
         local_epochs = config["local_epochs"]
 
         # Use values provided by the config
-        print(f"[Client {self.cid}, round {server_round}] fit, config: {config}")
+        print(
+            f"[Client {self.cid}, round {server_round}] fit, config: {config}")
         self.net.set_parameters(parameters)
         self.net.train_epoch(self.trainloader, epochs=local_epochs)
         return self.net.get_parameters(), len(self.trainloader), {}
@@ -29,8 +30,8 @@ class FlowerClient(fl.client.NumPyClient):
     def evaluate(self, parameters, config):
         print(f"[Client {self.cid}] evaluate, config: {config}")
         self.net.set_parameters(parameters)
-        loss, accuracy = self.net.test(self.valloader)
-        return float(loss), len(self.valloader), {"accuracy": float(accuracy)}
+        loss, accuracy, precision = self.net.test(self.valloader)
+        return float(loss), len(self.valloader), {"accuracy": float(accuracy), "precision": float(precision)}
 
 
 def client_fn(cid, net, trainloaders: list[DataLoader], valloaders: list[DataLoader]) -> FlowerClient:
