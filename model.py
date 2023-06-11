@@ -47,7 +47,7 @@ class BaseNet(nn.Module):
                 label_predicted += (predicted == self.focus_label).sum().item()
             epoch_loss /= len(trainloader.dataset)
             epoch_acc = correct / total
-            epoch_precision = true_pos / label_predicted if label_predicted != 0 else 1
+            epoch_precision = true_pos / label_predicted if label_predicted != 0 else None
             print(
                 f"Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}, precision of {CLASSES[self.focus_label]} {epoch_precision}")
 
@@ -71,7 +71,7 @@ class BaseNet(nn.Module):
 
         loss /= len(testloader.dataset)
         accuracy = correct / total
-        precision = true_pos / label_predicted if label_predicted != 0 else 1
+        precision = true_pos / label_predicted if label_predicted != 0 else None
         return loss, accuracy, precision
 
 

@@ -12,13 +12,16 @@ from torch.utils.data import DataLoader
 def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # Multiply accuracy of each client by number of examples used
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
-    precisions = [num_examples * m["precision"] for num_examples, m in metrics]
+    precisions = [num_examples * m["precision"]
+                  for num_examples, m in metrics if m["precision"] is not None]
     examples = [num_examples for num_examples, _ in metrics]
+    precision_examples = [num_examples for num_examples,
+                          m in metrics if m["precision"] is not None]
 
     # Aggregate and return custom metric (weighted average)
     return {
         "accuracy": sum(accuracies) / sum(examples),
-        "precision": sum(precisions) / sum(examples),
+        "precision": sum(precisions) / sum(precision_examples),
     }
 
 
