@@ -11,13 +11,16 @@ from PIL import Image
 from sklearn.model_selection import train_test_split
 
 
-def download_file(img_url: str, path: Path):
+def download_file(url, dst_path):
     headers = {'User-Agent': 'XY'}
-    request = urllib.request.Request(img_url, headers=headers)
+    request = urllib.request.Request(url, headers=headers)
+
+    if (Path(dst_path).exists()):
+        return
 
     with urllib.request.urlopen(request) as web_file:
         data = web_file.read()
-        with open(path, mode='wb') as local_file:
+        with open(dst_path, mode='wb') as local_file:
             local_file.write(data)
 
 
