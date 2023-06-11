@@ -6,9 +6,9 @@ import pandas as pd
 import urllib.request
 import os
 from pathlib import Path
-from tqdm import tqdm
 from PIL import Image
 from sklearn.model_selection import train_test_split
+from multiprocessing import Pool
 
 
 def download_file(url, dst_path):
@@ -43,7 +43,7 @@ class Fitzpatrick17k(Dataset):
 
         self.transform = transform
         self.image_dir = Path(image_dir)
-        if self.image_dir.exists():
+        if len([name for name in os.listdir(self.image_dir) if os.path.isfile(name)]) == len(self.table):
             print("Files already downloaded")
         else:
             self.download()
@@ -62,7 +62,7 @@ class Fitzpatrick17k(Dataset):
         os.mkdir(folder_dir)
         error_url = {}
 
-        for i in tqdm(self.table.index):
+        def download(i):
             url = self.table.loc[i, 'url']
             dst_path = folder_dir / self.table.loc[i, 'md5hash']
             try:
@@ -70,27 +70,30 @@ class Fitzpatrick17k(Dataset):
             except:
                 error_url[i] = url
 
+        with Pool(4) as p:
+            p.map(download, self.table.index)
+
         error_url
 
     def __len__(self):
         return len(self.table)
 
 
-def load_fitzpatrick(num_clients: int, skin_seperate=False, batch_size=32):
+def load_fitzpatrick(num_clients: int, image_dir: str, skin_seperate=False, batch_size=32):
     transform = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize(
             (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
     )
     train_set = Fitzpatrick17k(
         csv_file='./data/fitzpatrick17k.csv',
-        image_dir='./data/images',
+        image_dir=image_dir,
         train=True,
         transform=transform,
         sort_by_skin_color=skin_seperate,
     )
     test_set = Fitzpatrick17k(
         csv_file='./data/fitzpatrick17k.csv',
-        image_dir='./data/images',
+        image_dir=image_dir,
         train=False,
         transform=transform,
     )
