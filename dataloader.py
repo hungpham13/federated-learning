@@ -9,7 +9,7 @@ from pathlib import Path
 from PIL import Image
 from sklearn.model_selection import train_test_split
 from multiprocessing import Pool
-from config import CLASSES
+from config import CLASSES, LABEL_KEY
 
 
 def download_file(url, dst_path):
@@ -30,7 +30,7 @@ class Fitzpatrick17k(Dataset):
         df = pd.read_csv(csv_file)
         df.dropna(subset=['url'], inplace=True)
         df_train, df_test = train_test_split(
-            df, test_size=0.1, stratify=df[["three_partition_label"]])
+            df, test_size=0.1, stratify=df[[LABEL_KEY, "fitzpatrick"]])
 
         if train:
             if sort_by_skin_color:
@@ -59,7 +59,7 @@ class Fitzpatrick17k(Dataset):
         img = Image.open(img_path).convert("RGB")
         if self.transform:
             img = self.transform(img)
-        label = CLASSES.index(self.table.loc[idx, 'three_partition_label'])
+        label = CLASSES.index(self.table.loc[idx, LABEL_KEY])
         return img, label
 
     def run_download(self, i):

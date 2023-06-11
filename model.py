@@ -87,9 +87,9 @@ class Net(BaseNet):
 
     def forward(self, x: torch.Tensor) -> tensor:
         x = self.pool(F.relu(self.conv1(x)))
-        print(x.shape)
+        # print(x.shape)
         x = self.pool(F.relu(self.conv2(x)))
-        print(x.shape)
+        # print(x.shape)
         x = x.view(-1, 16 * 13 * 13)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
@@ -108,9 +108,9 @@ class VGG16(BaseNet):
 
     def forward(self, x):
         out = self.features(x)
-        print(out.shape)
+        # print(out.shape)
         out = out.view(out.size(0), -1)
-        print(out.shape)
+        # print(out.shape)
         out = self.classifier(out)
         return out
 

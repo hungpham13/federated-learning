@@ -5,3 +5,5 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available()
 NUM_CLIENTS = 10
 
 CLASSES = ('benign', 'non-neoplastic', 'malignant')
+
+LABEL_KEY = 'three_partition_label'
