@@ -32,7 +32,7 @@ class Fitzpatrick17k(Dataset):
         df = pd.read_csv(csv_file)
         df.dropna(subset=['url'], inplace=True)
         df_train, df_test = train_test_split(
-            df, test_size=0.1, stratify=df[["fitzpatrick", "three_partition_label"]])
+            df, test_size=0.1, stratify=df[["three_partition_label"]])
 
         if train:
             if sort_by_skin_color:
@@ -46,14 +46,18 @@ class Fitzpatrick17k(Dataset):
             self.download()
         else:
             self.error_url = None
-            downloaded = os.listdir(image_dir)
+            downloaded = [os.path.splitext(x)[0] for x in os.listdir(
+                image_dir) if os.path.splitext(x)[1] == '.jpg']
             self.table = self.table.loc[self.table['md5hash'].isin(
                 downloaded)].reset_index(drop=True)
         self.transform = transform
         self.image_dir = Path(image_dir)
 
     def __getitem__(self, idx):
-        img_path = self.image_dir / self.table.loc[idx, 'md5hash']
+        # img_path = self.image_dir / self.table.loc[idx, 'md5hash']
+        # if not img_path.exists():
+        img_path = self.image_dir / (self.table.loc[idx, 'md5hash'] + '.jpg')
+
         img = Image.open(img_path).convert("RGB")
         if self.transform:
             img = self.transform(img)
@@ -82,10 +86,11 @@ class Fitzpatrick17k(Dataset):
 
 
 def load_fitzpatrick(num_clients: int, image_dir: str, skin_seperate=False, batch_size=32):
-    transform = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize(
-            (0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
-    )
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize([32, 32]),
+        transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+    ])
     train_set = Fitzpatrick17k(
         csv_file='./data/fitzpatrick17k.csv',
         image_dir=image_dir,
@@ -93,12 +98,14 @@ def load_fitzpatrick(num_clients: int, image_dir: str, skin_seperate=False, batc
         transform=transform,
         sort_by_skin_color=skin_seperate,
     )
+    print('train set loaded, length: ', len(train_set))
     test_set = Fitzpatrick17k(
         csv_file='./data/fitzpatrick17k.csv',
         image_dir=image_dir,
         train=False,
         transform=transform,
     )
+    print('test set loaded, length: ', len(test_set))
 
     # Split training set into `num_clients` partitions to simulate different local datasets
     partition_size = len(train_set) // num_clients
@@ -131,8 +138,10 @@ def load_cifars(num_clients: int):
     )
     trainset = CIFAR10("./dataset", train=True,
                        download=True, transform=transform)
+    print('train set loaded, length: ', len(trainset))
     testset = CIFAR10("./dataset", train=False,
                       download=True, transform=transform)
+    print('test set loaded, length: ', len(testset))
 
     # Split training set into `num_clients` partitions to simulate different local datasets
     partition_size = len(trainset) // num_clients
