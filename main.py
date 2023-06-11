@@ -21,7 +21,7 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     # Aggregate and return custom metric (weighted average)
     return {
         "accuracy": sum(accuracies) / sum(examples),
-        "precision": sum(precisions) / sum(precision_examples),
+        "precision": sum(precisions) / sum(precision_examples) if sum(precision_examples) != 0 else None,
     }
 
 
