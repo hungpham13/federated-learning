@@ -35,10 +35,13 @@ class BaseNet(nn.Module):
                 # Metrics
                 epoch_loss += loss
                 total += labels.size(0)
-                correct += (torch.max(outputs.data, 1)[1] == labels).sum().item()
+                correct += (torch.max(outputs.data, 1)
+                            [1] == labels).sum().item()
+                print(torch.max(outputs.data, 1))
             epoch_loss /= len(trainloader.dataset)
             epoch_acc = correct / total
-            print(f"Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}")
+            print(
+                f"Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}")
 
     def test(self, testloader):
         """Evaluate the network on the entire test set."""
@@ -59,14 +62,14 @@ class BaseNet(nn.Module):
 
 
 class Net(BaseNet):
-    def __init__(self) -> None:
+    def __init__(self, output_classes=10) -> None:
         super(Net, self).__init__()
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.conv2 = nn.Conv2d(6, 16, 5)
         self.fc1 = nn.Linear(16 * 5 * 5, 120)
         self.fc2 = nn.Linear(120, 84)
-        self.fc3 = nn.Linear(84, 10)
+        self.fc3 = nn.Linear(84, output_classes)
 
     def forward(self, x: torch.Tensor) -> tensor:
         x = self.pool(F.relu(self.conv1(x)))
@@ -79,12 +82,13 @@ class Net(BaseNet):
 
 
 class VGG16(BaseNet):
-    cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M']
+    cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256,
+           'M', 512, 512, 512, 'M', 512, 512, 512, 'M']
 
-    def __init__(self):
+    def __init__(self, output_classes=10):
         super(VGG16, self).__init__()
         self.features = self._make_layers(self.cfg)
-        self.classifier = nn.Linear(512, 10)
+        self.classifier = nn.Linear(512, output_classes)
 
     def forward(self, x):
         out = self.features(x)
