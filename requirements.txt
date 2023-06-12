@@ -6,3 +6,4 @@ pandas
 tqdm
 scikit-learn
 matplotlib
+tensorboard

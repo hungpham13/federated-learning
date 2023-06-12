@@ -10,9 +10,9 @@ from config import DEVICE, CLASSES
 
 
 class BaseNet(nn.Module):
-    def __init__(self, focus_label=0):
+    def __init__(self, focus_labels=[0]):
         super(BaseNet, self).__init__()
-        self.focus_label = focus_label
+        self.focus_labels = focus_labels
 
     def get_parameters(self) -> List[np.ndarray]:
         return [val.cpu().numpy() for _, val in self.state_dict().items()]
@@ -29,7 +29,7 @@ class BaseNet(nn.Module):
         self.train()
         for epoch in range(epochs):
             correct, total, epoch_loss = 0, 0, 0.0
-            true_pos, label_predicted = 0, 0
+            precisions_tracker = {label: [0, 0] for label in self.focus_labels}
             for images, labels in trainloader:
                 images, labels = images.to(DEVICE), labels.to(DEVICE)
                 optimizer.zero_grad()
@@ -42,20 +42,23 @@ class BaseNet(nn.Module):
                 total += labels.size(0)
                 _, predicted = torch.max(outputs.data, 1)
                 correct += (predicted == labels).sum().item()
-                true_pos += torch.logical_and(predicted ==
-                                              labels, labels == self.focus_label).sum().item()
-                label_predicted += (predicted == self.focus_label).sum().item()
+                for l in self.focus_labels:
+                    precisions_tracker[l][0] += torch.logical_and(predicted ==
+                                                                      labels, labels == l).sum().item()
+                    precisions_tracker[l][1] += (predicted == l).sum().item()
+
+            # Metrics
             epoch_loss /= len(trainloader.dataset)
             epoch_acc = correct / total
-            epoch_precision = true_pos / label_predicted if label_predicted != 0 else None
-            print(
-                f"Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}, precision of {CLASSES[self.focus_label]} {epoch_precision}")
+            epoch_precision = {CLASSES[l]: precisions_tracker[l][0] / precisions_tracker[l][1] if precisions_tracker[l][1] != 0 else None for l in self.focus_labels}
+            print( f"Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}")
+            print("\tprecision:", epoch_precision)
 
     def test(self, testloader):
         """Evaluate the network on the entire test set."""
         criterion = torch.nn.CrossEntropyLoss()
         correct, total, loss = 0, 0, 0.0
-        true_pos, label_predicted = 0, 0
+        precisions_tracker = {label: [0, 0] for label in self.focus_labels}
         self.eval()
         with torch.no_grad():
             for images, labels in testloader:
@@ -65,19 +68,20 @@ class BaseNet(nn.Module):
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
-                true_pos += torch.logical_and(predicted ==
-                                              labels, labels == self.focus_label).sum().item()
-                label_predicted += (predicted == self.focus_label).sum().item()
+                for l in self.focus_labels:
+                    precisions_tracker[l][0] += torch.logical_and(predicted ==
+                                                                      labels, labels == l).sum().item()
+                    precisions_tracker[l][1] += (predicted == l).sum().item()
 
         loss /= len(testloader.dataset)
         accuracy = correct / total
-        precision = true_pos / label_predicted if label_predicted != 0 else None
+        precision = {CLASSES[l]: precisions_tracker[l][0] / precisions_tracker[l][1] if precisions_tracker[l][1] != 0 else None for l in self.focus_labels}
         return loss, accuracy, precision
 
 
 class Net(BaseNet):
-    def __init__(self, num_classes=10, focus_label=0) -> None:
-        super(Net, self).__init__(focus_label)
+    def __init__(self, num_classes=10, focus_labels=[0]) -> None:
+        super(Net, self).__init__(focus_labels)
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)  # 6 14 14
         self.conv2 = nn.Conv2d(6, 16, 5)  # 16 5 5
@@ -101,8 +105,8 @@ class VGG16(BaseNet):
     cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256,
            'M', 512, 512, 512, 'M', 512, 512, 512, 'M']
 
-    def __init__(self, num_classes=10, focus_label=0):
-        super(VGG16, self).__init__(focus_label)
+    def __init__(self, num_classes=10, focus_labels=[0]):
+        super(VGG16, self).__init__(focus_labels)
         self.features = self._make_layers(self.cfg)
         self.classifier = nn.Linear(2048, num_classes)
 
