@@ -8,4 +8,4 @@ CLASSES = ('benign', 'non-neoplastic', 'malignant')
 
 LABEL_KEY = 'three_partition_label'
 
-RUN_ID = 'runs/first_run'
+RUN_ID = 'runs/fd-not-sort-by-skin'
