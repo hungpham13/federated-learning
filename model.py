@@ -29,7 +29,7 @@ class BaseNet(nn.Module):
         self.train()
         for epoch in range(epochs):
             correct, total, epoch_loss = 0, 0, 0.0
-            precisions_tracker = {label: [0, 0] for label in self.focus_labels}
+            confusion_matrix = np.zeros((len(CLASSES), len(CLASSES)))
             for images, labels in trainloader:
                 images, labels = images.to(DEVICE), labels.to(DEVICE)
                 optimizer.zero_grad()
@@ -42,23 +42,24 @@ class BaseNet(nn.Module):
                 total += labels.size(0)
                 _, predicted = torch.max(outputs.data, 1)
                 correct += (predicted == labels).sum().item()
-                for l in self.focus_labels:
-                    precisions_tracker[l][0] += torch.logical_and(predicted ==
-                                                                      labels, labels == l).sum().item()
-                    precisions_tracker[l][1] += (predicted == l).sum().item()
+                for p in range(len(CLASSES)):
+                    for t in range(len(CLASSES)):
+                        confusion_matrix[p][t] += torch.logical_and(predicted == p, labels == t).sum().item()
 
             # Metrics
             epoch_loss /= len(trainloader.dataset)
             epoch_acc = correct / total
-            epoch_precision = {CLASSES[l]: precisions_tracker[l][0] / precisions_tracker[l][1] if precisions_tracker[l][1] != 0 else None for l in self.focus_labels}
+            confusion_matrix = confusion_matrix / np.sum(confusion_matrix, axis=1)[:, None]
+            epoch_precision = {CLASSES[l]: confusion_matrix[l][l] for l in self.focus_labels}
             print( f"Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}")
             print("\tprecision:", epoch_precision)
+            print("\tconfusion matrix:", confusion_matrix)
 
     def test(self, testloader):
         """Evaluate the network on the entire test set."""
         criterion = torch.nn.CrossEntropyLoss()
         correct, total, loss = 0, 0, 0.0
-        precisions_tracker = {label: [0, 0] for label in self.focus_labels}
+        confusion_matrix = np.zeros((len(CLASSES), len(CLASSES)))
         self.eval()
         with torch.no_grad():
             for images, labels in testloader:
@@ -68,15 +69,16 @@ class BaseNet(nn.Module):
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
-                for l in self.focus_labels:
-                    precisions_tracker[l][0] += torch.logical_and(predicted ==
-                                                                      labels, labels == l).sum().item()
-                    precisions_tracker[l][1] += (predicted == l).sum().item()
+                for p in range(len(CLASSES)):
+                    for t in range(len(CLASSES)):
+                        confusion_matrix[p][t] += torch.logical_and(predicted == p, labels == t).sum().item()
+
 
         loss /= len(testloader.dataset)
         accuracy = correct / total
-        precision = {CLASSES[l]: precisions_tracker[l][0] / precisions_tracker[l][1] if precisions_tracker[l][1] != 0 else None for l in self.focus_labels}
-        return loss, accuracy, precision
+        confusion_matrix = confusion_matrix / np.sum(confusion_matrix, axis=1)[:, None]
+        precision = {CLASSES[l]: confusion_matrix[l][l] for l in self.focus_labels}
+        return loss, accuracy, precision, confusion_matrix
 
 
 class Net(BaseNet):

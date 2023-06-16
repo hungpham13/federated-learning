@@ -1,12 +1,14 @@
 from dataloader import load_cifars
 import flwr as fl
-from config import DEVICE, NUM_CLIENTS, CLASSES
+from config import DEVICE, NUM_CLIENTS, RUN_ID, CLASSES
 from client import client_fn
 from flwr.server.strategy import Strategy
 from flwr.common import Metrics
 from typing import List, Tuple, Optional, Dict, Type
 from model import BaseNet
 from torch.utils.data import DataLoader
+from utils import plot_tensorboard
+import numpy as np
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -15,16 +17,26 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     accuracies = [num_examples * m["accuracy"] for num_examples, m in metrics]
     examples = [num_examples for num_examples, _ in metrics]
     precisions = {}
+    confusion_matrix = np.zeros((len(CLASSES), len(CLASSES)))
     for label in metrics[0][1]["precision"]:
         nominator = sum([num_examples * m["precision"][label] 
                   for num_examples, m in metrics if m["precision"][label] is not None])
         denominator = sum([num_examples for num_examples, m in metrics if m["precision"][label] is not None])
         precisions[label] = nominator / denominator if denominator != 0 else None
 
+    for p in range(len(CLASSES)):
+        for t in range(len(CLASSES)):
+            nominator = sum([num_examples * m["confusion_matrix"][p][t] 
+                    for num_examples, m in metrics if not np.isnan(m["confusion_matrix"][p][t])])
+            denominator = sum([num_examples for num_examples, m in metrics if not np.isnan(m["confusion_matrix"][p][t])])
+            confusion_matrix[p][t] = nominator / denominator if denominator != 0 else np.nan
+
+
     # Aggregate and return custom metric (weighted average)
     return {
         "accuracy": sum(accuracies) / sum(examples),
         "precision": precisions,
+        "confusion_matrix": confusion_matrix,
     }
 
 
@@ -37,16 +49,13 @@ def evaluate(
         tensorboard_writer: SummaryWriter,
 ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
     net.set_parameters(parameters)  # Update model with the latest parameters
-    loss, accuracy, precision = net.test(testloader)
+    loss, accuracy, precision, confusion_matrix = net.test(testloader)
     print(
         f"Server-side evaluation loss {loss} / accuracy {accuracy} / precision {precision}")
-    tensorboard_writer.add_scalar("Loss/server-test", loss, server_round)
-    tensorboard_writer.add_scalar("Accuracy/server-test", accuracy, server_round)
-    for label in precision:
-        if precision[label] is not None:
-            tensorboard_writer.add_scalar(f"Precision {label}/server-test", precision[label], server_round)
+    plot_tensorboard(tensorboard_writer, loss, accuracy, precision, confusion_matrix, "server-test", server_round)
 
-    return loss, {"accuracy": accuracy, "precision": precision}
+
+    return loss, {"accuracy": accuracy, "precision": precision, "confusion_matrix": confusion_matrix}
 
 
 def fit_config(server_round: int):
@@ -64,7 +73,7 @@ def fit_config(server_round: int):
 
 def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds=3):
     trainloaders, valloaders, testloader = loaders
-    tensorboard_writer = SummaryWriter()
+    tensorboard_writer = SummaryWriter(RUN_ID)
 
     # Specify client resources if you need GPU (defaults to 1 CPU and 0 GPU)
     client_resources = None

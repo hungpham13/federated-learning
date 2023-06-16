@@ -1,11 +1,12 @@
 import flwr as fl
 from model import BaseNet
-from config import DEVICE
+from config import RUN_ID
 from torch.utils.data import DataLoader
+from utils import plot_tensorboard
 
 from torch.utils.tensorboard import SummaryWriter
 
-tensorboard_writer = SummaryWriter()
+tensorboard_writer = SummaryWriter(RUN_ID)
 
 class FlowerClient(fl.client.NumPyClient):
     def __init__(self, cid, net: BaseNet, trainloader, valloader):
@@ -33,14 +34,11 @@ class FlowerClient(fl.client.NumPyClient):
     def evaluate(self, parameters, config):
         print(f"[Client {self.cid}] evaluate, config: {config}")
         self.net.set_parameters(parameters)
-        loss, accuracy, precision = self.net.test(self.valloader)
+        loss, accuracy, precision, confusion_matrix = self.net.test(self.valloader)
         server_round = config["server_round"]
-        tensorboard_writer.add_scalar(f"Loss/client-test/{self.cid}", loss, server_round)
-        tensorboard_writer.add_scalar(f"Accuracy/client-test/{self.cid}", accuracy, server_round)
-        for label in precision:
-            if precision[label] is not None:
-                tensorboard_writer.add_scalar(f"Precision {label}/client-test/{self.cid}", precision[label], server_round)
-        return float(loss), len(self.valloader), {"accuracy": float(accuracy), "precision": precision}
+
+        plot_tensorboard(tensorboard_writer, loss, accuracy, precision, confusion_matrix, f"client-test/{self.cid}", server_round)
+        return float(loss), len(self.valloader), {"accuracy": float(accuracy), "precision": precision, "confusion_matrix": confusion_matrix}
 
 
 def client_fn(cid, net, trainloaders: list[DataLoader], valloaders: list[DataLoader]) -> FlowerClient:
