@@ -26,18 +26,10 @@ def download_file(url, dst_path):
 
 
 class Fitzpatrick17k(Dataset):
-    def __init__(self, csv_file, image_dir, train=True, download=False, transform=None, sort_by_skin_color=False):
+    def __init__(self, csv_file, image_dir, download=False, transform=None):
         df = pd.read_csv(csv_file)
         df.dropna(subset=['url'], inplace=True)
-        df_train, df_test = train_test_split(
-            df, test_size=0.1, stratify=df[[LABEL_KEY, "fitzpatrick"]])
-
-        if train:
-            if sort_by_skin_color:
-                df_train.sort_values('fitzpatrick', inplace=True)
-            self.table = df_train.reset_index(drop=True)
-        else:
-            self.table = df_test.reset_index(drop=True)
+        self.table = df.reset_index(drop=True)
 
         if download:
             self.error_url = {}
@@ -83,26 +75,31 @@ class Fitzpatrick17k(Dataset):
         return len(self.table)
 
 
-def load_fitzpatrick(num_clients: int, image_dir: str, skin_seperate=False, batch_size=32):
+def load_fitzpatrick(num_clients: int, skin_stratify_sampling=True, image_dir='./data/images/', skin_seperate=False, batch_size=32):
     transform = transforms.Compose([
         transforms.ToTensor(),
         transforms.Resize([64, 64]),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
-    train_set = Fitzpatrick17k(
+    dataset = Fitzpatrick17k(
         csv_file='./data/fitzpatrick17k.csv',
         image_dir=image_dir,
-        train=True,
         transform=transform,
-        sort_by_skin_color=skin_seperate,
     )
+    df = dataset.table
+    if skin_stratify_sampling:
+        df_train, df_test = train_test_split(
+            df, test_size=0.1, stratify=df[[LABEL_KEY, "fitzpatrick"]], random_state=42)
+    else:
+        df_train, df_test = train_test_split(df, test_size=0.1, random_state=42)
+
+    if skin_seperate:
+        df_train.sort_values('fitzpatrick', inplace=True)
+    
+    train_set = Subset(dataset, df_train.index)
+    test_set = Subset(dataset, df_test.index)
+
     print('train set loaded, length: ', len(train_set))
-    test_set = Fitzpatrick17k(
-        csv_file='./data/fitzpatrick17k.csv',
-        image_dir=image_dir,
-        train=False,
-        transform=transform,
-    )
     print('test set loaded, length: ', len(test_set))
 
     # Split training set into `num_clients` partitions to simulate different local datasets
@@ -115,12 +112,20 @@ def load_fitzpatrick(num_clients: int, image_dir: str, skin_seperate=False, batc
     # Split each partition into train/val and create DataLoader
     trainloaders = []
     valloaders = []
-    for ds in datasets:
-        len_val = len(ds) // 10  # 10 % validation set
-        len_train = len(ds) - len_val
-        lengths = [len_train, len_val]
-        ds_train, ds_val = random_split(
-            ds, lengths, torch.Generator().manual_seed(42))
+    for i,ds in enumerate(datasets):
+        if skin_stratify_sampling:
+            table = ds.dataset.dataset.table.loc[ds.indices]
+            train_df, val_df = train_test_split(table, stratify=table[[LABEL_KEY, "fitzpatrick"]], test_size=0.1)
+            ds_train = Subset(ds, train_df.index)
+            ds_val = Subset(ds, val_df.index)
+        else:
+            len_val = len(ds) // 10  # 10 % validation set
+            len_train = len(ds) - len_val
+            lengths = [len_train, len_val]
+            ds_train, ds_val = random_split(
+                ds, lengths, torch.Generator().manual_seed(42))
+        print(f'train set {i} loaded, length: ', len(ds_train))
+        print('validation set loaded, length: ', len(ds_val))
         trainloaders.append(DataLoader(
             ds_train, batch_size=batch_size, shuffle=True))
         valloaders.append(DataLoader(ds_val, batch_size=batch_size))
