@@ -85,9 +85,9 @@ class Net(BaseNet):
     def __init__(self, num_classes=10, focus_labels=[0]) -> None:
         super(Net, self).__init__(focus_labels)
         self.conv1 = nn.Conv2d(3, 6, 5)
-        self.pool = nn.MaxPool2d(2, 2)  # 6 14 14
-        self.conv2 = nn.Conv2d(6, 16, 5)  # 16 5 5
-        self.fc1 = nn.Linear(16 * 13 * 13, 120)
+        self.pool = nn.MaxPool2d(2, 2)  # 6 62 62
+        self.conv2 = nn.Conv2d(6, 16, 5)  # 16 29 29
+        self.fc1 = nn.Linear(16 * 29 * 29, 120)
         self.fc2 = nn.Linear(120, 84)
         self.fc3 = nn.Linear(84, num_classes)
 
@@ -96,7 +96,7 @@ class Net(BaseNet):
         # print(x.shape)
         x = self.pool(F.relu(self.conv2(x)))
         # print(x.shape)
-        x = x.view(-1, 16 * 13 * 13)
+        x = x.view(-1, 16 * 29 * 29)
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
@@ -110,7 +110,7 @@ class VGG16(BaseNet):
     def __init__(self, num_classes=10, focus_labels=[0]):
         super(VGG16, self).__init__(focus_labels)
         self.features = self._make_layers(self.cfg)
-        self.classifier = nn.Linear(2048, num_classes)
+        self.classifier = nn.Linear(8192, num_classes)
 
     def forward(self, x):
         out = self.features(x)
