@@ -8,4 +8,4 @@ CLASSES = ('benign', 'non-neoplastic', 'malignant')
 
 LABEL_KEY = 'three_partition_label'
 
-RUN_ID = 'runs/centralize-stratrified-skin-sampling-img-232-convNext'
+RUN_ID = 'runs/centralize-stratrified-skin-sampling-img-232-efficientnet'

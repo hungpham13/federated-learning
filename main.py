@@ -5,7 +5,7 @@ from client import client_fn
 from flwr.server.strategy import Strategy
 from flwr.common import Metrics
 from typing import List, Tuple, Optional, Dict, Type
-from model import BaseNet
+from model.model import BaseNet
 from torch.utils.data import DataLoader
 from utils import plot_tensorboard
 import numpy as np

@@ -1,5 +1,5 @@
 import flwr as fl
-from model import BaseNet
+from model.model import BaseNet
 from config import RUN_ID
 from torch.utils.data import DataLoader
 from utils import plot_tensorboard
