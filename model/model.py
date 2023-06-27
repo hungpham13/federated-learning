@@ -27,7 +27,7 @@ class BaseNet(nn.Module):
         criterion = torch.nn.CrossEntropyLoss(
             weight=torch.tensor(CLASS_WEIGHTS).to(DEVICE))
         # optimizer = torch.optim.Adam(self.parameters())
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.8)
+        optimizer = torch.optim.SGD(self.parameters(), lr=0.01, momentum=0.8)
         self.train()
         self.to(DEVICE)
         for epoch in range(epochs):
