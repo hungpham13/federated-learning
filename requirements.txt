@@ -7,4 +7,5 @@ tqdm
 scikit-learn
 matplotlib
 tensorboard
+torchinfo
 # ultralytics

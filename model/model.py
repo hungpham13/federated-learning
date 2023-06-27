@@ -24,9 +24,9 @@ class BaseNet(nn.Module):
 
     def train_epoch(self, trainloader, epochs: int):
         """Train the network on the training set."""
-        criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.HingeEmbeddingLoss()
         # optimizer = torch.optim.Adam(self.parameters())
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.01, momentum=0.8)
+        optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.8)
         self.train()
         self.to(DEVICE)
         for epoch in range(epochs):
@@ -46,14 +46,18 @@ class BaseNet(nn.Module):
                 correct += (predicted == labels).sum().item()
                 for p in range(len(CLASSES)):
                     for t in range(len(CLASSES)):
-                        confusion_matrix[p][t] += torch.logical_and(predicted == p, labels == t).sum().item()
+                        confusion_matrix[p][t] += torch.logical_and(
+                            predicted == p, labels == t).sum().item()
 
             # Metrics
             epoch_loss /= len(trainloader.dataset)
             epoch_acc = correct / total
-            confusion_matrix = confusion_matrix / np.sum(confusion_matrix, axis=1)[:, None]
-            epoch_precision = {CLASSES[l]: confusion_matrix[l][l] for l in self.focus_labels}
-            print( f"Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}")
+            confusion_matrix = confusion_matrix / \
+                np.sum(confusion_matrix, axis=1)[:, None]
+            epoch_precision = {CLASSES[l]: confusion_matrix[l][l]
+                               for l in self.focus_labels}
+            print(
+                f"Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}")
             print("\tprecision:", epoch_precision)
             print("\tconfusion matrix:", confusion_matrix)
 
@@ -74,13 +78,15 @@ class BaseNet(nn.Module):
                 correct += (predicted == labels).sum().item()
                 for p in range(len(CLASSES)):
                     for t in range(len(CLASSES)):
-                        confusion_matrix[p][t] += torch.logical_and(predicted == p, labels == t).sum().item()
-
+                        confusion_matrix[p][t] += torch.logical_and(
+                            predicted == p, labels == t).sum().item()
 
         loss /= len(testloader.dataset)
         accuracy = correct / total
-        confusion_matrix = confusion_matrix / np.sum(confusion_matrix, axis=1)[:, None]
-        precision = {CLASSES[l]: confusion_matrix[l][l] for l in self.focus_labels}
+        confusion_matrix = confusion_matrix / \
+            np.sum(confusion_matrix, axis=1)[:, None]
+        precision = {CLASSES[l]: confusion_matrix[l][l]
+                     for l in self.focus_labels}
         return loss, accuracy, precision, confusion_matrix
 
 

@@ -78,7 +78,7 @@ class Fitzpatrick17k(Dataset):
 def load_fitzpatrick(num_clients: int, skin_stratify_sampling=True, image_dir='./data/images/', skin_seperate=False, batch_size=32):
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Resize([128, 128]),
+        transforms.Resize([224, 224]),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     dataset = Fitzpatrick17k(
@@ -91,11 +91,12 @@ def load_fitzpatrick(num_clients: int, skin_stratify_sampling=True, image_dir='.
         df_train, df_test = train_test_split(
             df, test_size=0.1, stratify=df[[LABEL_KEY, "fitzpatrick"]], random_state=42)
     else:
-        df_train, df_test = train_test_split(df, test_size=0.1, random_state=42)
+        df_train, df_test = train_test_split(
+            df, test_size=0.1, random_state=42)
 
     if skin_seperate:
         df_train.sort_values('fitzpatrick', inplace=True)
-    
+
     train_set = Subset(dataset, df_train.index)
     test_set = Subset(dataset, df_test.index)
 
@@ -112,10 +113,11 @@ def load_fitzpatrick(num_clients: int, skin_stratify_sampling=True, image_dir='.
     # Split each partition into train/val and create DataLoader
     trainloaders = []
     valloaders = []
-    for i,ds in enumerate(datasets):
+    for i, ds in enumerate(datasets):
         if skin_stratify_sampling:
             table = ds.dataset.dataset.table.loc[ds.indices]
-            train_df, val_df = train_test_split(table, stratify=table[[LABEL_KEY, "fitzpatrick"]], test_size=0.1)
+            train_df, val_df = train_test_split(
+                table, stratify=table[[LABEL_KEY, "fitzpatrick"]], test_size=0.1)
             ds_train = Subset(ds, train_df.index)
             ds_val = Subset(ds, val_df.index)
         else:
