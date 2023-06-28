@@ -9,6 +9,7 @@ from model.model import BaseNet
 from torch.utils.data import DataLoader
 from utils import plot_tensorboard
 import numpy as np
+from dataloader import load_fitzpatrick
 from torch.utils.tensorboard import SummaryWriter
 
 
@@ -19,18 +20,21 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
     precisions = {}
     confusion_matrix = np.zeros((len(CLASSES), len(CLASSES)))
     for label in metrics[0][1]["precision"]:
-        nominator = sum([num_examples * m["precision"][label] 
-                  for num_examples, m in metrics if m["precision"][label] is not None])
-        denominator = sum([num_examples for num_examples, m in metrics if m["precision"][label] is not None])
-        precisions[label] = nominator / denominator if denominator != 0 else None
+        nominator = sum([num_examples * m["precision"][label]
+                         for num_examples, m in metrics if m["precision"][label] is not None])
+        denominator = sum([num_examples for num_examples,
+                          m in metrics if m["precision"][label] is not None])
+        precisions[label] = nominator / \
+            denominator if denominator != 0 else None
 
     for p in range(len(CLASSES)):
         for t in range(len(CLASSES)):
-            nominator = sum([num_examples * m["confusion_matrix"][p][t] 
-                    for num_examples, m in metrics if not np.isnan(m["confusion_matrix"][p][t])])
-            denominator = sum([num_examples for num_examples, m in metrics if not np.isnan(m["confusion_matrix"][p][t])])
-            confusion_matrix[p][t] = nominator / denominator if denominator != 0 else np.nan
-
+            nominator = sum([num_examples * m["confusion_matrix"][p][t]
+                             for num_examples, m in metrics if not np.isnan(m["confusion_matrix"][p][t])])
+            denominator = sum([num_examples for num_examples, m in metrics if not np.isnan(
+                m["confusion_matrix"][p][t])])
+            confusion_matrix[p][t] = nominator / \
+                denominator if denominator != 0 else np.nan
 
     # Aggregate and return custom metric (weighted average)
     return {
@@ -52,8 +56,8 @@ def evaluate(
     loss, accuracy, precision, confusion_matrix = net.test(testloader)
     print(
         f"Server-side evaluation loss {loss} / accuracy {accuracy} / precision {precision}")
-    plot_tensorboard(tensorboard_writer, loss, accuracy, precision, confusion_matrix, "server-test", server_round)
-
+    plot_tensorboard(tensorboard_writer, loss, accuracy, precision,
+                     confusion_matrix, "server-test", server_round)
 
     return loss, {"accuracy": accuracy, "precision": precision, "confusion_matrix": confusion_matrix}
 
@@ -85,7 +89,8 @@ def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds
         evaluate_metrics_aggregation_fn=weighted_average,
         initial_parameters=fl.common.ndarrays_to_parameters(
             net.get_parameters()),
-        evaluate_fn=lambda x, y, z: evaluate(x, y, z, net, testloader, tensorboard_writer),
+        evaluate_fn=lambda x, y, z: evaluate(
+            x, y, z, net, testloader, tensorboard_writer),
         on_fit_config_fn=fit_config,
         on_evaluate_config_fn=fit_config,
         **strategyArgs,
@@ -99,3 +104,26 @@ def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds
         strategy=strategy,
         client_resources=client_resources,
     )
+
+
+def centralize_training(net, data_loader=load_fitzpatrick, batch_size=32, skin_stratify_sampling=True):
+    trainloaders, valloaders, testloader = data_loader(
+        1, skin_stratify_sampling=skin_stratify_sampling, batch_size=batch_size)
+
+    trainloader = trainloaders[0]
+    valloader = valloaders[0]
+    tensor_writer = SummaryWriter(RUN_ID)
+
+    for epoch in range(30):
+        net.train_epoch(trainloader, 1)
+        loss, accuracy, precision, confusion_matrix = net.test(valloader)
+        plot_tensorboard(tensor_writer, loss, accuracy, precision,
+                         confusion_matrix, "centralize-train-validation", epoch)
+        print(
+            f"Epoch {epoch+1}: validation loss {loss}, accuracy {accuracy}, precision {precision}")
+
+    loss, accuracy, precision, confusion_matrix = net.test(testloader)
+    plot_tensorboard(tensor_writer, loss, accuracy, precision,
+                     confusion_matrix, "centralize-test", 0)
+    print(
+        f"Final test set performance:\n\tloss {loss}\n\taccuracy {accuracy}\n\tprecision {precision}\n\tconfusion matrix {confusion_matrix}")
