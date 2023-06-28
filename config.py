@@ -9,4 +9,4 @@ CLASS_WEIGHTS = [0.3, 0.1, 0.6]
 
 LABEL_KEY = 'three_partition_label'
 
-RUN_ID = 'runs/centralize-stratrified-skin-sampling-img-232-efficientnet'
+RUN_ID = 'runs/centralize-weighted-loss-img-224-vgg'

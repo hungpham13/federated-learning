@@ -120,7 +120,7 @@ class VGG16(BaseNet):
     def __init__(self, num_classes=10, focus_labels=[0]):
         super(VGG16, self).__init__(focus_labels)
         self.features = self._make_layers(self.cfg)
-        self.classifier = nn.Linear(8192, num_classes)
+        self.classifier = nn.Linear(25088, num_classes)
 
     def forward(self, x):
         out = self.features(x)
