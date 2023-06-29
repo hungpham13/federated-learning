@@ -26,8 +26,8 @@ class BaseNet(nn.Module):
         """Train the network on the training set."""
         criterion = torch.nn.CrossEntropyLoss(
             weight=torch.tensor(CLASS_WEIGHTS).to(DEVICE))
-        # optimizer = torch.optim.Adam(self.parameters())
-        optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.8)
+        optimizer = torch.optim.Adam(self.parameters())
+        # optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.8)
         self.train()
         self.to(DEVICE)
         for epoch in range(epochs):
@@ -111,35 +111,3 @@ class Net(BaseNet):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
-
-
-class VGG16(BaseNet):
-    cfg = [64, 64, 'M', 128, 128, 'M', 256, 256, 256,
-           'M', 512, 512, 512, 'M', 512, 512, 512, 'M']
-
-    def __init__(self, num_classes=10, focus_labels=[0]):
-        super(VGG16, self).__init__(focus_labels)
-        self.features = self._make_layers(self.cfg)
-        self.classifier = nn.Linear(25088, num_classes)
-
-    def forward(self, x):
-        out = self.features(x)
-        # print(out.shape)
-        out = out.view(out.size(0), -1)
-        # print(out.shape)
-        out = self.classifier(out)
-        return out
-
-    def _make_layers(self, cfg):
-        layers = []
-        in_channels = 3
-        for x in cfg:
-            if x == 'M':
-                layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
-            else:
-                layers += [nn.Conv2d(in_channels, x, kernel_size=3, padding=1),
-                           nn.BatchNorm2d(x),
-                           nn.ReLU(inplace=True)]
-                in_channels = x
-        layers += [nn.AvgPool2d(kernel_size=1, stride=1)]
-        return nn.Sequential(*layers)
