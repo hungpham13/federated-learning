@@ -9,4 +9,4 @@ CLASS_WEIGHTS = [0.3, 0.1, 0.6]
 
 LABEL_KEY = 'three_partition_label'
 
-RUN_ID = 'runs/centralize-weighted-ce-img-224-vgg-sgd'
+RUN_ID = 'runs/centralize-weighted-loss-224-resnet-adam'
