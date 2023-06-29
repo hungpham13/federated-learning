@@ -78,7 +78,7 @@ class Fitzpatrick17k(Dataset):
 def load_fitzpatrick(num_clients: int, skin_stratify_sampling=True, image_dir='./data/images/', skin_seperate=False, batch_size=32):
     transform = transforms.Compose([
         transforms.ToTensor(),
-        transforms.Resize([224, 224]),
+        transforms.Resize([128, 128]),
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     dataset = Fitzpatrick17k(
