@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from collections import OrderedDict
 import numpy as np
 from config import DEVICE, CLASSES, CLASS_WEIGHTS
+from .focal_loss import focal_loss
 
 
 class BaseNet(nn.Module):
@@ -24,8 +25,9 @@ class BaseNet(nn.Module):
 
     def train_epoch(self, trainloader, epochs: int):
         """Train the network on the training set."""
-        criterion = torch.nn.CrossEntropyLoss(
-            weight=torch.tensor(CLASS_WEIGHTS).to(DEVICE))
+        # criterion = torch.nn.CrossEntropyLoss(
+        #     weight=torch.tensor(CLASS_WEIGHTS).to(DEVICE))
+        criterion = focal_loss(alpha=CLASS_WEIGHTS, gamma=2)
         optimizer = torch.optim.Adam(self.parameters())
         # optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.8)
         self.train()

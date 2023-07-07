@@ -13,7 +13,7 @@ class VGG(BaseNet):
     def __init__(self, vgg_name, num_classes=10, focus_labels=[0]):
         super(VGG, self).__init__(focus_labels)
         self.features = self._make_layers(cfg[vgg_name])
-        self.classifier = nn.Linear(25088, num_classes)
+        self.classifier = nn.Linear(8192, num_classes)
 
     def forward(self, x):
         out = self.features(x)
