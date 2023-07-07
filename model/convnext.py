@@ -31,7 +31,8 @@ __all__ = [
 class LayerNorm2d(nn.LayerNorm):
     def forward(self, x: Tensor) -> Tensor:
         x = x.permute(0, 2, 3, 1)
-        x = F.layer_norm(x, self.normalized_shape, self.weight, self.bias, self.eps)
+        x = F.layer_norm(x, self.normalized_shape,
+                         self.weight, self.bias, self.eps)
         x = x.permute(0, 3, 1, 2)
         return x
 
@@ -49,7 +50,8 @@ class CNBlock(nn.Module):
             norm_layer = partial(nn.LayerNorm, eps=1e-6)
 
         self.block = nn.Sequential(
-            nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim, bias=True),
+            nn.Conv2d(dim, dim, kernel_size=7,
+                      padding=3, groups=dim, bias=True),
             Permute([0, 2, 3, 1]),
             norm_layer(dim),
             nn.Linear(in_features=dim, out_features=4 * dim, bias=True),
@@ -98,9 +100,10 @@ class ConvNeXt(BaseNet):
         block: Optional[Callable[..., nn.Module]] = None,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
         focus_labels=[0],
+        lr=0.001,
         **kwargs: Any,
     ) -> None:
-        super(ConvNeXt, self).__init__(focus_labels)
+        super(ConvNeXt, self).__init__(focus_labels, lr)
         _log_api_usage_once(self)
 
         if not block_setting:
@@ -138,7 +141,8 @@ class ConvNeXt(BaseNet):
             stage: List[nn.Module] = []
             for _ in range(cnf.num_layers):
                 # adjust stochastic depth probability based on the depth of the stage block
-                sd_prob = stochastic_depth_prob * stage_block_id / (total_stage_blocks - 1.0)
+                sd_prob = stochastic_depth_prob * \
+                    stage_block_id / (total_stage_blocks - 1.0)
                 stage.append(block(cnf.input_channels, layer_scale, sd_prob))
                 stage_block_id += 1
             layers.append(nn.Sequential(*stage))
@@ -147,7 +151,8 @@ class ConvNeXt(BaseNet):
                 layers.append(
                     nn.Sequential(
                         norm_layer(cnf.input_channels),
-                        nn.Conv2d(cnf.input_channels, cnf.out_channels, kernel_size=2, stride=2),
+                        nn.Conv2d(cnf.input_channels, cnf.out_channels,
+                                  kernel_size=2, stride=2),
                     )
                 )
 
@@ -159,7 +164,8 @@ class ConvNeXt(BaseNet):
             lastblock.out_channels if lastblock.out_channels is not None else lastblock.input_channels
         )
         self.classifier = nn.Sequential(
-            norm_layer(lastconv_output_channels), nn.Flatten(1), nn.Linear(lastconv_output_channels, num_classes)
+            norm_layer(lastconv_output_channels), nn.Flatten(
+                1), nn.Linear(lastconv_output_channels, num_classes)
         )
 
         for m in self.modules():
@@ -186,9 +192,11 @@ def _convnext(
     **kwargs: Any,
 ) -> ConvNeXt:
     if weights is not None:
-        _ovewrite_named_param(kwargs, "num_classes", len(weights.meta["categories"]))
+        _ovewrite_named_param(kwargs, "num_classes",
+                              len(weights.meta["categories"]))
 
-    model = ConvNeXt(block_setting, stochastic_depth_prob=stochastic_depth_prob, **kwargs)
+    model = ConvNeXt(
+        block_setting, stochastic_depth_prob=stochastic_depth_prob, **kwargs)
 
     if weights is not None:
         model.load_state_dict(weights.get_state_dict(progress=progress))
@@ -211,7 +219,8 @@ _COMMON_META = {
 class ConvNeXt_Tiny_Weights(WeightsEnum):
     IMAGENET1K_V1 = Weights(
         url="https://download.pytorch.org/models/convnext_tiny-983f1562.pth",
-        transforms=partial(ImageClassification, crop_size=224, resize_size=236),
+        transforms=partial(ImageClassification,
+                           crop_size=224, resize_size=236),
         meta={
             **_COMMON_META,
             "num_params": 28589128,
@@ -231,7 +240,8 @@ class ConvNeXt_Tiny_Weights(WeightsEnum):
 class ConvNeXt_Small_Weights(WeightsEnum):
     IMAGENET1K_V1 = Weights(
         url="https://download.pytorch.org/models/convnext_small-0c510722.pth",
-        transforms=partial(ImageClassification, crop_size=224, resize_size=230),
+        transforms=partial(ImageClassification,
+                           crop_size=224, resize_size=230),
         meta={
             **_COMMON_META,
             "num_params": 50223688,
@@ -251,7 +261,8 @@ class ConvNeXt_Small_Weights(WeightsEnum):
 class ConvNeXt_Base_Weights(WeightsEnum):
     IMAGENET1K_V1 = Weights(
         url="https://download.pytorch.org/models/convnext_base-6075fbad.pth",
-        transforms=partial(ImageClassification, crop_size=224, resize_size=232),
+        transforms=partial(ImageClassification,
+                           crop_size=224, resize_size=232),
         meta={
             **_COMMON_META,
             "num_params": 88591464,
@@ -271,7 +282,8 @@ class ConvNeXt_Base_Weights(WeightsEnum):
 class ConvNeXt_Large_Weights(WeightsEnum):
     IMAGENET1K_V1 = Weights(
         url="https://download.pytorch.org/models/convnext_large-ea097f82.pth",
-        transforms=partial(ImageClassification, crop_size=224, resize_size=232),
+        transforms=partial(ImageClassification,
+                           crop_size=224, resize_size=232),
         meta={
             **_COMMON_META,
             "num_params": 197767336,

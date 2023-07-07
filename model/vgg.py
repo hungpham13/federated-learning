@@ -10,8 +10,8 @@ cfg = {
 
 
 class VGG(BaseNet):
-    def __init__(self, vgg_name, num_classes=10, focus_labels=[0]):
-        super(VGG, self).__init__(focus_labels)
+    def __init__(self, vgg_name, num_classes=10, focus_labels=[0], lr=0.001):
+        super(VGG, self).__init__(focus_labels, lr)
         self.features = self._make_layers(cfg[vgg_name])
         self.classifier = nn.Linear(8192, num_classes)
 

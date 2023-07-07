@@ -72,8 +72,8 @@ class Bottleneck(nn.Module):
 
 
 class ResNet(BaseNet):
-    def __init__(self, block, num_blocks, num_classes=10, focus_labels=[0]):
-        super(ResNet, self).__init__(focus_labels)
+    def __init__(self, block, num_blocks, num_classes=10, focus_labels=[0], lr=0.001):
+        super(ResNet, self).__init__(focus_labels, lr)
         self.in_planes = 64
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3,

@@ -79,7 +79,8 @@ class MBConvConfig(_MBConvConfig):
         num_layers = self.adjust_depth(num_layers, depth_mult)
         if block is None:
             block = MBConv
-        super().__init__(expand_ratio, kernel, stride, input_channels, out_channels, num_layers, block)
+        super().__init__(expand_ratio, kernel, stride,
+                         input_channels, out_channels, num_layers, block)
 
     @staticmethod
     def adjust_depth(num_layers: int, depth_mult: float):
@@ -100,7 +101,8 @@ class FusedMBConvConfig(_MBConvConfig):
     ) -> None:
         if block is None:
             block = FusedMBConv
-        super().__init__(expand_ratio, kernel, stride, input_channels, out_channels, num_layers, block)
+        super().__init__(expand_ratio, kernel, stride,
+                         input_channels, out_channels, num_layers, block)
 
 
 class MBConv(nn.Module):
@@ -122,7 +124,8 @@ class MBConv(nn.Module):
         activation_layer = nn.SiLU
 
         # expand
-        expanded_channels = cnf.adjust_channels(cnf.input_channels, cnf.expand_ratio)
+        expanded_channels = cnf.adjust_channels(
+            cnf.input_channels, cnf.expand_ratio)
         if expanded_channels != cnf.input_channels:
             layers.append(
                 Conv2dNormActivation(
@@ -149,7 +152,8 @@ class MBConv(nn.Module):
 
         # squeeze and excitation
         squeeze_channels = max(1, cnf.input_channels // 4)
-        layers.append(se_layer(expanded_channels, squeeze_channels, activation=partial(nn.SiLU, inplace=True)))
+        layers.append(se_layer(expanded_channels, squeeze_channels,
+                      activation=partial(nn.SiLU, inplace=True)))
 
         # project
         layers.append(
@@ -187,7 +191,8 @@ class FusedMBConv(nn.Module):
         layers: List[nn.Module] = []
         activation_layer = nn.SiLU
 
-        expanded_channels = cnf.adjust_channels(cnf.input_channels, cnf.expand_ratio)
+        expanded_channels = cnf.adjust_channels(
+            cnf.input_channels, cnf.expand_ratio)
         if expanded_channels != cnf.input_channels:
             # fused expand
             layers.append(
@@ -241,6 +246,7 @@ class EfficientNet(BaseNet):
         norm_layer: Optional[Callable[..., nn.Module]] = None,
         last_channel: Optional[int] = None,
         focus_labels=[0],
+        lr=0.001,
     ) -> None:
         """
         EfficientNet V1 and V2 main class
@@ -253,16 +259,18 @@ class EfficientNet(BaseNet):
             norm_layer (Optional[Callable[..., nn.Module]]): Module specifying the normalization layer to use
             last_channel (int): The number of channels on the penultimate layer
         """
-        super(EfficientNet, self).__init__(focus_labels)
+        super(EfficientNet, self).__init__(focus_labels, lr)
         _log_api_usage_once(self)
 
         if not inverted_residual_setting:
-            raise ValueError("The inverted_residual_setting should not be empty")
+            raise ValueError(
+                "The inverted_residual_setting should not be empty")
         elif not (
             isinstance(inverted_residual_setting, Sequence)
             and all([isinstance(s, _MBConvConfig) for s in inverted_residual_setting])
         ):
-            raise TypeError("The inverted_residual_setting should be List[MBConvConfig]")
+            raise TypeError(
+                "The inverted_residual_setting should be List[MBConvConfig]")
 
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -278,7 +286,8 @@ class EfficientNet(BaseNet):
         )
 
         # building inverted residual blocks
-        total_stage_blocks = sum(cnf.num_layers for cnf in inverted_residual_setting)
+        total_stage_blocks = sum(
+            cnf.num_layers for cnf in inverted_residual_setting)
         stage_block_id = 0
         for cnf in inverted_residual_setting:
             stage: List[nn.Module] = []
@@ -292,7 +301,8 @@ class EfficientNet(BaseNet):
                     block_cnf.stride = 1
 
                 # adjust stochastic depth probability based on the depth of the stage block
-                sd_prob = stochastic_depth_prob * float(stage_block_id) / total_stage_blocks
+                sd_prob = stochastic_depth_prob * \
+                    float(stage_block_id) / total_stage_blocks
 
                 stage.append(block_cnf.block(block_cnf, sd_prob, norm_layer))
                 stage_block_id += 1
@@ -301,7 +311,8 @@ class EfficientNet(BaseNet):
 
         # building last several layers
         lastconv_input_channels = inverted_residual_setting[-1].out_channels
-        lastconv_output_channels = last_channel if last_channel is not None else 4 * lastconv_input_channels
+        lastconv_output_channels = last_channel if last_channel is not None else 4 * \
+            lastconv_input_channels
         layers.append(
             Conv2dNormActivation(
                 lastconv_input_channels,
@@ -355,9 +366,11 @@ def _efficientnet(
     **kwargs: Any,
 ) -> EfficientNet:
     if weights is not None:
-        _ovewrite_named_param(kwargs, "num_classes", len(weights.meta["categories"]))
+        _ovewrite_named_param(kwargs, "num_classes",
+                              len(weights.meta["categories"]))
 
-    model = EfficientNet(inverted_residual_setting, dropout, last_channel=last_channel, **kwargs)
+    model = EfficientNet(inverted_residual_setting, dropout,
+                         last_channel=last_channel, **kwargs)
 
     if weights is not None:
         model.load_state_dict(weights.get_state_dict(progress=progress))
@@ -371,7 +384,8 @@ def _efficientnet_conf(
 ) -> Tuple[Sequence[Union[MBConvConfig, FusedMBConvConfig]], Optional[int]]:
     inverted_residual_setting: Sequence[Union[MBConvConfig, FusedMBConvConfig]]
     if arch.startswith("efficientnet_b"):
-        bneck_conf = partial(MBConvConfig, width_mult=kwargs.pop("width_mult"), depth_mult=kwargs.pop("depth_mult"))
+        bneck_conf = partial(MBConvConfig, width_mult=kwargs.pop(
+            "width_mult"), depth_mult=kwargs.pop("depth_mult"))
         inverted_residual_setting = [
             bneck_conf(1, 3, 1, 32, 16, 1),
             bneck_conf(6, 3, 2, 16, 24, 2),
@@ -769,7 +783,8 @@ def efficientnet_b0(
     """
     weights = EfficientNet_B0_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_b0", width_mult=1.0, depth_mult=1.0)
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_b0", width_mult=1.0, depth_mult=1.0)
     return _efficientnet(
         inverted_residual_setting, kwargs.pop("dropout", 0.2), last_channel, weights, progress, **kwargs
     )
@@ -800,7 +815,8 @@ def efficientnet_b1(
     """
     weights = EfficientNet_B1_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_b1", width_mult=1.0, depth_mult=1.1)
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_b1", width_mult=1.0, depth_mult=1.1)
     return _efficientnet(
         inverted_residual_setting, kwargs.pop("dropout", 0.2), last_channel, weights, progress, **kwargs
     )
@@ -831,7 +847,8 @@ def efficientnet_b2(
     """
     weights = EfficientNet_B2_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_b2", width_mult=1.1, depth_mult=1.2)
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_b2", width_mult=1.1, depth_mult=1.2)
     return _efficientnet(
         inverted_residual_setting, kwargs.pop("dropout", 0.3), last_channel, weights, progress, **kwargs
     )
@@ -862,7 +879,8 @@ def efficientnet_b3(
     """
     weights = EfficientNet_B3_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_b3", width_mult=1.2, depth_mult=1.4)
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_b3", width_mult=1.2, depth_mult=1.4)
     return _efficientnet(
         inverted_residual_setting,
         kwargs.pop("dropout", 0.3),
@@ -898,7 +916,8 @@ def efficientnet_b4(
     """
     weights = EfficientNet_B4_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_b4", width_mult=1.4, depth_mult=1.8)
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_b4", width_mult=1.4, depth_mult=1.8)
     return _efficientnet(
         inverted_residual_setting,
         kwargs.pop("dropout", 0.4),
@@ -934,7 +953,8 @@ def efficientnet_b5(
     """
     weights = EfficientNet_B5_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_b5", width_mult=1.6, depth_mult=2.2)
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_b5", width_mult=1.6, depth_mult=2.2)
     return _efficientnet(
         inverted_residual_setting,
         kwargs.pop("dropout", 0.4),
@@ -971,7 +991,8 @@ def efficientnet_b6(
     """
     weights = EfficientNet_B6_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_b6", width_mult=1.8, depth_mult=2.6)
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_b6", width_mult=1.8, depth_mult=2.6)
     return _efficientnet(
         inverted_residual_setting,
         kwargs.pop("dropout", 0.5),
@@ -1008,7 +1029,8 @@ def efficientnet_b7(
     """
     weights = EfficientNet_B7_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_b7", width_mult=2.0, depth_mult=3.1)
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_b7", width_mult=2.0, depth_mult=3.1)
     return _efficientnet(
         inverted_residual_setting,
         kwargs.pop("dropout", 0.5),
@@ -1046,7 +1068,8 @@ def efficientnet_v2_s(
     """
     weights = EfficientNet_V2_S_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_v2_s")
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_v2_s")
     return _efficientnet(
         inverted_residual_setting,
         kwargs.pop("dropout", 0.2),
@@ -1084,7 +1107,8 @@ def efficientnet_v2_m(
     """
     weights = EfficientNet_V2_M_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_v2_m")
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_v2_m")
     return _efficientnet(
         inverted_residual_setting,
         kwargs.pop("dropout", 0.3),
@@ -1122,7 +1146,8 @@ def efficientnet_v2_l(
     """
     weights = EfficientNet_V2_L_Weights.verify(weights)
 
-    inverted_residual_setting, last_channel = _efficientnet_conf("efficientnet_v2_l")
+    inverted_residual_setting, last_channel = _efficientnet_conf(
+        "efficientnet_v2_l")
     return _efficientnet(
         inverted_residual_setting,
         kwargs.pop("dropout", 0.4),

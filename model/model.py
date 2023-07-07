@@ -11,9 +11,10 @@ from .focal_loss import focal_loss
 
 
 class BaseNet(nn.Module):
-    def __init__(self, focus_labels=[0]):
+    def __init__(self, focus_labels=[0], lr=0.001):
         super(BaseNet, self).__init__()
         self.focus_labels = focus_labels
+        self.lr = lr
 
     def get_parameters(self) -> List[np.ndarray]:
         return [val.cpu().numpy() for _, val in self.state_dict().items()]
@@ -28,7 +29,7 @@ class BaseNet(nn.Module):
         # criterion = torch.nn.CrossEntropyLoss(
         #     weight=torch.tensor(CLASS_WEIGHTS).to(DEVICE))
         criterion = focal_loss(alpha=CLASS_WEIGHTS, gamma=2)
-        optimizer = torch.optim.Adam(self.parameters())
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
         # optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.8)
         self.train()
         self.to(DEVICE)
@@ -94,8 +95,8 @@ class BaseNet(nn.Module):
 
 
 class Net(BaseNet):
-    def __init__(self, num_classes=10, focus_labels=[0]) -> None:
-        super(Net, self).__init__(focus_labels)
+    def __init__(self, num_classes=10, focus_labels=[0], lr=0.001) -> None:
+        super(Net, self).__init__(focus_labels, lr)
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)  # 6 62 62
         self.conv2 = nn.Conv2d(6, 16, 5)  # 16 29 29
