@@ -8,18 +8,15 @@ from collections import OrderedDict
 import numpy as np
 from config import DEVICE, CLASSES, CLASS_WEIGHTS
 from .focal_loss import focal_loss
-from torch.optim.lr_scheduler import ExponentialLR
 
 
 class BaseNet(nn.Module):
-    def __init__(self, focus_labels=[0], lr=0.001):
+    def __init__(self, focus_labels=[0]):
         super(BaseNet, self).__init__()
         self.focus_labels = focus_labels
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
-        self.scheduler = ExponentialLR(self.optimizer, gamma=0.9)
 
-    def scheduler_step(self):
-        self.scheduler.step()
+    # def scheduler_step(self):
+    #     self.scheduler.step()
 
     def get_parameters(self) -> List[np.ndarray]:
         return [val.cpu().numpy() for _, val in self.state_dict().items()]
@@ -29,7 +26,7 @@ class BaseNet(nn.Module):
         state_dict = OrderedDict({k: tensor(v) for k, v in params_dict})
         self.load_state_dict(state_dict, strict=True)
 
-    def train_epoch(self, trainloader, epochs: int):
+    def train_epoch(self, trainloader, epochs: int, optimizer, scheduler=None):
         """Train the network on the training set."""
         criterion = torch.nn.CrossEntropyLoss()
         # criterion = focal_loss(alpha=CLASS_WEIGHTS, gamma=2)
@@ -42,11 +39,11 @@ class BaseNet(nn.Module):
             confusion_matrix = np.zeros((len(CLASSES), len(CLASSES)))
             for images, labels in trainloader:
                 images, labels = images.to(DEVICE), labels.to(DEVICE)
-                self.optimizer.zero_grad()
+                optimizer.zero_grad()
                 outputs = self(images)
                 loss = criterion(self(images), labels)
                 loss.backward()
-                self.optimizer.step()
+                optimizer.step()
                 # Metrics
                 epoch_loss += loss
                 total += labels.size(0)
@@ -56,7 +53,8 @@ class BaseNet(nn.Module):
                     for t in range(len(CLASSES)):
                         confusion_matrix[p][t] += torch.logical_and(
                             predicted == p, labels == t).sum().item()
-            self.scheduler.step()
+            if scheduler is not None:
+                scheduler.step()
 
             # Metrics
             epoch_loss /= len(trainloader.dataset)
@@ -100,8 +98,8 @@ class BaseNet(nn.Module):
 
 
 class Net(BaseNet):
-    def __init__(self, num_classes=10, focus_labels=[0], lr=0.001) -> None:
-        super(Net, self).__init__(focus_labels, lr)
+    def __init__(self, num_classes=10, focus_labels=[0]) -> None:
+        super(Net, self).__init__(focus_labels)
         self.conv1 = nn.Conv2d(3, 6, 5)
         self.pool = nn.MaxPool2d(2, 2)  # 6 62 62
         self.conv2 = nn.Conv2d(6, 16, 5)  # 16 29 29
