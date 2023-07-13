@@ -106,12 +106,13 @@ def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds
     )
 
 
-def centralize_training(net, data_loader=load_fitzpatrick, batch_size=32, skin_stratify_sampling=True, epoch_num=30):
-    trainloaders, valloaders, testloader = data_loader(
-        1, skin_stratify_sampling=skin_stratify_sampling, batch_size=batch_size)
+def centralize_training(net: BaseNet, loaders, epoch_num=30):
+    trainloader, valloader, testloader = loaders
+    # trainloaders, valloaders, testloader = data_loader(
+    #     1, skin_stratify_sampling=skin_stratify_sampling, batch_size=batch_size)
 
-    trainloader = trainloaders[0]
-    valloader = valloaders[0]
+    # trainloader = trainloaders[0]
+    # valloader = valloaders[0]
     tensor_writer = SummaryWriter(RUN_ID)
 
     for epoch in range(epoch_num):
@@ -121,6 +122,7 @@ def centralize_training(net, data_loader=load_fitzpatrick, batch_size=32, skin_s
                          confusion_matrix, "centralize-train-validation", epoch)
         print(
             f"Epoch {epoch+1}: validation loss {loss}, accuracy {accuracy}, precision {precision}")
+        net.scheduler_step()
 
     loss, accuracy, precision, confusion_matrix = net.test(testloader)
     plot_tensorboard(tensor_writer, loss, accuracy, precision,

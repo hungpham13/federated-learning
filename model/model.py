@@ -8,13 +8,18 @@ from collections import OrderedDict
 import numpy as np
 from config import DEVICE, CLASSES, CLASS_WEIGHTS
 from .focal_loss import focal_loss
+from torch.optim.lr_scheduler import ExponentialLR
 
 
 class BaseNet(nn.Module):
     def __init__(self, focus_labels=[0], lr=0.001):
         super(BaseNet, self).__init__()
         self.focus_labels = focus_labels
-        self.lr = lr
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=lr)
+        self.scheduler = ExponentialLR(self.optimizer, gamma=0.9)
+
+    def scheduler_step(self):
+        self.scheduler.step()
 
     def get_parameters(self) -> List[np.ndarray]:
         return [val.cpu().numpy() for _, val in self.state_dict().items()]
@@ -28,7 +33,7 @@ class BaseNet(nn.Module):
         """Train the network on the training set."""
         criterion = torch.nn.CrossEntropyLoss()
         # criterion = focal_loss(alpha=CLASS_WEIGHTS, gamma=2)
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
+
         # optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.8)
         self.train()
         self.to(DEVICE)
@@ -37,11 +42,11 @@ class BaseNet(nn.Module):
             confusion_matrix = np.zeros((len(CLASSES), len(CLASSES)))
             for images, labels in trainloader:
                 images, labels = images.to(DEVICE), labels.to(DEVICE)
-                optimizer.zero_grad()
+                self.optimizer.zero_grad()
                 outputs = self(images)
                 loss = criterion(self(images), labels)
                 loss.backward()
-                optimizer.step()
+                self.optimizer.step()
                 # Metrics
                 epoch_loss += loss
                 total += labels.size(0)
@@ -51,6 +56,7 @@ class BaseNet(nn.Module):
                     for t in range(len(CLASSES)):
                         confusion_matrix[p][t] += torch.logical_and(
                             predicted == p, labels == t).sum().item()
+            self.scheduler.step()
 
             # Metrics
             epoch_loss /= len(trainloader.dataset)
