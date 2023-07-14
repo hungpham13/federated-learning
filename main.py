@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from utils import plot_tensorboard
 import numpy as np
 from dataloader import load_fitzpatrick
-from torch.optim.lr_scheduler import ExponentialLR
+from torch.optim.lr_scheduler import ExponentialLR, ReduceLROnPlateau
 import torch
 from torch.utils.tensorboard import SummaryWriter
 
@@ -108,16 +108,18 @@ def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds
     )
 
 
-def centralize_training(net: BaseNet, loaders, epoch_num=30, lr=0.001, gamma=0.3):
+def centralize_training(net: BaseNet, loaders, epoch_num=30, lr=0.001, gamma='auto'):
     trainloader, valloader, testloader = loaders
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    scheduler = ExponentialLR(optimizer, gamma=gamma)
+    if gamma == 'auto':
+        scheduler = ReduceLROnPlateau(optimizer, 'min')
+    else:
+        scheduler = ExponentialLR(optimizer, gamma=gamma)
 
     tensor_writer = SummaryWriter(RUN_ID)
 
     for epoch in range(epoch_num):
-        net.train_epoch(trainloader, 1, optimizer=optimizer,
-                        scheduler=scheduler)
+        net.train_epoch(trainloader, 1, optimizer=optimizer)
         loss, accuracy, precision, confusion_matrix = net.test(valloader)
         plot_tensorboard(tensor_writer, loss, accuracy, precision,
                          confusion_matrix, "centralize-train-validation", epoch)
@@ -125,6 +127,11 @@ def centralize_training(net: BaseNet, loaders, epoch_num=30, lr=0.001, gamma=0.3
         tensor_writer.add_scalar(f"Learning Rate", learning_rate, epoch)
         print(
             f"Epoch {epoch+1}: validation loss {loss}, accuracy {accuracy}, precision {precision}, learning rate: {learning_rate}")
+
+        if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+            scheduler.step(loss)
+        else:
+            scheduler.step()
 
     loss, accuracy, precision, confusion_matrix = net.test(testloader)
     plot_tensorboard(tensor_writer, loss, accuracy, precision,

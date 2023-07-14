@@ -53,8 +53,6 @@ class BaseNet(nn.Module):
                     for t in range(len(CLASSES)):
                         confusion_matrix[p][t] += torch.logical_and(
                             predicted == p, labels == t).sum().item()
-            if scheduler is not None:
-                scheduler.step()
 
             # Metrics
             epoch_loss /= len(trainloader.dataset)
