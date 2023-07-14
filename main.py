@@ -108,10 +108,10 @@ def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds
     )
 
 
-def centralize_training(net: BaseNet, loaders, epoch_num=30, lr=0.001):
+def centralize_training(net: BaseNet, loaders, epoch_num=30, lr=0.001, gamma=0.3):
     trainloader, valloader, testloader = loaders
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    scheduler = ExponentialLR(optimizer, gamma=0.9)
+    scheduler = ExponentialLR(optimizer, gamma=gamma)
 
     tensor_writer = SummaryWriter(RUN_ID)
 
