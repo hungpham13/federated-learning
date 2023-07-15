@@ -26,10 +26,10 @@ class BaseNet(nn.Module):
         state_dict = OrderedDict({k: tensor(v) for k, v in params_dict})
         self.load_state_dict(state_dict, strict=True)
 
-    def train_epoch(self, trainloader, epochs: int, optimizer, scheduler=None):
+    def train_epoch(self, trainloader, epochs: int, optimizer):
         """Train the network on the training set."""
-        criterion = torch.nn.CrossEntropyLoss()
-        # criterion = focal_loss(alpha=CLASS_WEIGHTS, gamma=2)
+        # criterion = torch.nn.CrossEntropyLoss()
+        criterion = focal_loss(alpha=CLASS_WEIGHTS, gamma=2)
 
         # optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.8)
         self.train()

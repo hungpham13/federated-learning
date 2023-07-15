@@ -108,13 +108,8 @@ def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds
     )
 
 
-def centralize_training(net: BaseNet, loaders, epoch_num=30, lr=0.001, gamma='auto'):
+def centralize_training(net: BaseNet, loaders, epoch_num, optimizer, scheduler=None):
     trainloader, valloader, testloader = loaders
-    optimizer = torch.optim.Adam(net.parameters(), lr=lr)
-    if gamma == 'auto':
-        scheduler = ReduceLROnPlateau(optimizer, 'min')
-    else:
-        scheduler = ExponentialLR(optimizer, gamma=gamma)
 
     tensor_writer = SummaryWriter(RUN_ID)
 
@@ -126,14 +121,14 @@ def centralize_training(net: BaseNet, loaders, epoch_num=30, lr=0.001, gamma='au
         try:
             learning_rate = scheduler._last_lr[0]
         except:
-            learning_rate = lr
+            learning_rate = optimizer.param_groups[0]['lr']
         tensor_writer.add_scalar(f"Learning Rate", learning_rate, epoch)
         print(
             f"Epoch {epoch+1}: validation loss {loss}, accuracy {accuracy}, precision {precision}, learning rate: {learning_rate}")
 
         if isinstance(scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
             scheduler.step(loss)
-        else:
+        elif scheduler is not None:
             scheduler.step()
 
     loss, accuracy, precision, confusion_matrix = net.test(testloader)
