@@ -123,7 +123,10 @@ def centralize_training(net: BaseNet, loaders, epoch_num=30, lr=0.001, gamma='au
         loss, accuracy, precision, confusion_matrix = net.test(valloader)
         plot_tensorboard(tensor_writer, loss, accuracy, precision,
                          confusion_matrix, "centralize-train-validation", epoch)
-        learning_rate = scheduler.get_last_lr()[0]
+        try:
+            learning_rate = scheduler._last_lr[0]
+        except:
+            learning_rate = lr
         tensor_writer.add_scalar(f"Learning Rate", learning_rate, epoch)
         print(
             f"Epoch {epoch+1}: validation loss {loss}, accuracy {accuracy}, precision {precision}, learning rate: {learning_rate}")
