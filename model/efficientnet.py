@@ -246,7 +246,6 @@ class EfficientNet(BaseNet):
         norm_layer: Optional[Callable[..., nn.Module]] = None,
         last_channel: Optional[int] = None,
         focus_labels=[0],
-        lr=0.001,
     ) -> None:
         """
         EfficientNet V1 and V2 main class
@@ -259,7 +258,7 @@ class EfficientNet(BaseNet):
             norm_layer (Optional[Callable[..., nn.Module]]): Module specifying the normalization layer to use
             last_channel (int): The number of channels on the penultimate layer
         """
-        super(EfficientNet, self).__init__(focus_labels, lr)
+        super(EfficientNet, self).__init__(focus_labels)
         _log_api_usage_once(self)
 
         if not inverted_residual_setting:

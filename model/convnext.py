@@ -100,10 +100,9 @@ class ConvNeXt(BaseNet):
         block: Optional[Callable[..., nn.Module]] = None,
         norm_layer: Optional[Callable[..., nn.Module]] = None,
         focus_labels=[0],
-        lr=0.001,
         **kwargs: Any,
     ) -> None:
-        super(ConvNeXt, self).__init__(focus_labels, lr)
+        super(ConvNeXt, self).__init__(focus_labels)
         _log_api_usage_once(self)
 
         if not block_setting:
