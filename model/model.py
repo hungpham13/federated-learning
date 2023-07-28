@@ -28,9 +28,9 @@ class BaseNet(nn.Module):
 
     def train_epoch(self, trainloader, epochs: int, optimizer):
         """Train the network on the training set."""
-        # criterion = torch.nn.CrossEntropyLoss()
+        criterion = torch.nn.CrossEntropyLoss()
         # criterion = focal_loss(alpha=CLASS_WEIGHTS, gamma=2)
-        criterion = focal_loss(gamma=2)
+        # criterion = focal_loss(gamma=2)
 
         # optimizer = torch.optim.SGD(self.parameters(), lr=0.001, momentum=0.8)
         self.train()

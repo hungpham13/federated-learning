@@ -9,4 +9,4 @@ CLASS_WEIGHTS = [0.3, 0.1, 0.6]
 
 LABEL_KEY = 'three_partition_label'
 
-RUN_ID = 'runs/centralize-cross-entropy-loss-128-vgg-adam'
+RUN_ID = 'runs/federate-cel-128img-vgg-adam-1e-6lr'

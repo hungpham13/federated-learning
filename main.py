@@ -64,7 +64,7 @@ def evaluate(
     return loss, {"accuracy": accuracy, "precision": precision, "confusion_matrix": confusion_matrix}
 
 
-def fit_config(server_round: int):
+def fit_config(server_round: int, learning_rate: float):
     """Return training configuration dict for each round.
 
     Perform two rounds of training with one local epoch, increase to two local
@@ -73,11 +73,12 @@ def fit_config(server_round: int):
     config = {
         "server_round": server_round,  # The current round of federated learning
         "local_epochs": 1 if server_round < 2 else 2,  #
+        "learning_rate": learning_rate,
     }
     return config
 
 
-def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds=3):
+def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds=3, learning_rate=1e-6, scheduler=None):
     trainloaders, valloaders, testloader = loaders
     tensorboard_writer = SummaryWriter(RUN_ID)
 
@@ -93,8 +94,8 @@ def simulate(StrategyCls: Type[Strategy], strategyArgs, net, loaders, num_rounds
             net.get_parameters()),
         evaluate_fn=lambda x, y, z: evaluate(
             x, y, z, net, testloader, tensorboard_writer),
-        on_fit_config_fn=fit_config,
-        on_evaluate_config_fn=fit_config,
+        on_fit_config_fn=lambda x: fit_config(x, learning_rate),
+        on_evaluate_config_fn=lambda x: fit_config(x, learning_rate),
         **strategyArgs,
     )
 
@@ -122,7 +123,9 @@ def centralize_training(net: BaseNet, loaders, epoch_num, optimizer, scheduler=N
             learning_rate = scheduler._last_lr[0]
         except:
             learning_rate = optimizer.param_groups[0]['lr']
+
         tensor_writer.add_scalar(f"Learning Rate", learning_rate, epoch)
+
         print(
             f"Epoch {epoch+1}: validation loss {loss}, accuracy {accuracy}, precision {precision}, learning rate: {learning_rate}")
 
