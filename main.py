@@ -31,12 +31,14 @@ def weighted_average(metrics: List[Tuple[int, Metrics]]) -> Metrics:
 
     for p in range(len(CLASSES)):
         for t in range(len(CLASSES)):
-            nominator = sum([num_examples * m["confusion_matrix"][p][t]
-                             for num_examples, m in metrics if not np.isnan(m["confusion_matrix"][p][t])])
-            denominator = sum([num_examples for num_examples, m in metrics if not np.isnan(
-                m["confusion_matrix"][p][t])])
-            confusion_matrix[p][t] = nominator / \
-                denominator if denominator != 0 else np.nan
+            # nominator = sum([num_examples * m["confusion_matrix"][p][t]
+            #                  for num_examples, m in metrics if not np.isnan(m["confusion_matrix"][p][t])])
+            # denominator = sum([num_examples for num_examples, m in metrics if not np.isnan(
+            #     m["confusion_matrix"][p][t])])
+            # confusion_matrix[p][t] = nominator / \
+            #     denominator if denominator != 0 else np.nan
+            confusion_matrix[p][t] = sum(
+                [m["confusion_matrix"][p][t] for num_examples, m in metrics if not np.isnan(m["confusion_matrix"][p][t])])
 
     # Aggregate and return custom metric (weighted average)
     return {

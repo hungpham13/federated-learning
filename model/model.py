@@ -58,9 +58,9 @@ class BaseNet(nn.Module):
             # Metrics
             epoch_loss /= len(trainloader.dataset)
             epoch_acc = correct / total
-            confusion_matrix = confusion_matrix / \
+            precision_matrix = confusion_matrix / \
                 np.sum(confusion_matrix, axis=1)[:, None]
-            epoch_precision = {CLASSES[l]: confusion_matrix[l][l]
+            epoch_precision = {CLASSES[l]: precision_matrix[l][l]
                                for l in self.focus_labels}
             print(
                 f"Epoch {epoch + 1}: train loss {epoch_loss}, accuracy {epoch_acc}")
@@ -89,9 +89,9 @@ class BaseNet(nn.Module):
 
         loss /= len(testloader.dataset)
         accuracy = correct / total
-        confusion_matrix = confusion_matrix / \
+        precision_matrix = confusion_matrix / \
             np.sum(confusion_matrix, axis=1)[:, None]
-        precision = {CLASSES[l]: confusion_matrix[l][l]
+        precision = {CLASSES[l]: precision_matrix[l][l]
                      for l in self.focus_labels}
         return loss, accuracy, precision, confusion_matrix
 
